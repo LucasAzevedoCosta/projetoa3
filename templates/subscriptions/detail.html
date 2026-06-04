@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+
+{% block title %}Assinatura - {{ assinatura.cliente.nome }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'subscriptions:list' %}">Assinaturas</a></li>
+            <li class="breadcrumb-item active">{{ assinatura.cliente.nome }}</li>
+        </ol>
+    </nav>
+
+    <div class="card shadow-sm">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h4 class="mb-0"><i class="bi bi-credit-card"></i> Assinatura</h4>
+            <div>
+                <a href="{% url 'subscriptions:update' assinatura.pk %}" class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-pencil"></i> Editar
+                </a>
+                <a href="{% url 'subscriptions:delete' assinatura.pk %}" class="btn btn-sm btn-outline-danger">
+                    <i class="bi bi-trash"></i> Excluir
+                </a>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>Cliente:</strong>
+                        <a href="{% url 'customers:detail' assinatura.cliente.pk %}">{{ assinatura.cliente.nome }}</a>
+                    </p>
+                    <p><strong>Plano:</strong> {{ assinatura.get_plano_display }}</p>
+                    <p><strong>Valor:</strong> R$ {{ assinatura.valor }}</p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>Data Início:</strong> {{ assinatura.data_inicio }}</p>
+                    <p><strong>Status:</strong>
+                        {% if assinatura.status == 'ativa' %}
+                            <span class="badge bg-success">Ativa</span>
+                        {% else %}
+                            <span class="badge bg-danger">Cancelada</span>
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

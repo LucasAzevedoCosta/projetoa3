@@ -1,0 +1,23 @@
+# Claude
+.claude/
+.devcontainer/
+.vscode/
+CLAUDE.MD
+HANDOFF.md
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+
+# Django
+db.sqlite3
+media/models/*.joblib
+
+# Env
+.env
+*.env
+venv/
+.venv/

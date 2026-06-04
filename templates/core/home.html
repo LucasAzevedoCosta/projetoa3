@@ -1,0 +1,302 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="hero-section text-center">
+        <h1><i class="bi bi-film"></i> StreamChurn</h1>
+        <p class="mb-0">Análise Preditiva de Cancelamento de Assinaturas</p>
+    </div>
+
+    <!-- Cards de Estatísticas -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-6 col-lg-3">
+            <div class="card card-stat shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <div class="stat-icon bg-primary-soft"><i class="bi bi-people-fill"></i></div>
+                    </div>
+                    <div class="stat-value text-primary">{{ total_clientes }}</div>
+                    <div class="stat-label">Total de Clientes</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 col-lg-3">
+            <div class="card card-stat shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <div class="stat-icon bg-success-soft"><i class="bi bi-check-circle-fill"></i></div>
+                    </div>
+                    <div class="stat-value text-success">{{ total_ativos }}</div>
+                    <div class="stat-label">Clientes Ativos</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 col-lg-3">
+            <div class="card card-stat shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <div class="stat-icon bg-danger-soft"><i class="bi bi-x-circle-fill"></i></div>
+                    </div>
+                    <div class="stat-value text-danger">{{ total_cancelados }}</div>
+                    <div class="stat-label">Clientes Cancelados</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 col-lg-3">
+            <div class="card card-stat shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <div class="stat-icon bg-warning-soft"><i class="bi bi-exclamation-triangle-fill"></i></div>
+                    </div>
+                    <div class="stat-value" style="color: #cc9a06;">{{ taxa_churn }}%</div>
+                    <div class="stat-label">Taxa de Churn</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráficos Linha 1 -->
+    <div class="row g-4 mb-4">
+        <div class="col-lg-8">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0 fw-bold"><i class="bi bi-bar-chart"></i> Cancelamento por Faixa Etária</h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="chartFaixaEtaria"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0 fw-bold"><i class="bi bi-pie-chart"></i> Cancelamento por Gênero</h6>
+                </div>
+                <div class="card-body d-flex align-items-center justify-content-center">
+                    <canvas id="chartGenero"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráficos Linha 2 -->
+    <div class="row g-4 mb-4">
+        <div class="col-lg-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0 fw-bold"><i class="bi bi-bar-chart"></i> Cancelamento por Plano</h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="chartPlano"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0 fw-bold"><i class="bi bi-bar-chart"></i> Top 10 Estados com Maior Churn</h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="chartEstado"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scatter Plot -->
+    <div class="row g-4 mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0 fw-bold"><i class="bi bi-scatter-chart"></i> Relação entre Inatividade e Probabilidade de Churn</h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="chartScatter" style="height: 350px;"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabela Clientes em Risco -->
+    <div class="row g-4 mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0 fw-bold"><i class="bi bi-exclamation-diamond"></i> Clientes em Risco</h6>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>Idade</th>
+                                    <th>Estado</th>
+                                    <th>Probabilidade</th>
+                                    <th>Risco</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for pred in clientes_risco %}
+                                <tr>
+                                    <td class="fw-semibold">{{ pred.nome }}</td>
+                                    <td>{{ pred.idade }}</td>
+                                    <td>{{ pred.estado }}</td>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="progress flex-grow-1" style="height: 8px;">
+                                                <div class="progress-bar {% if pred.nivel_risco == 'alto' %}bg-danger{% else %}bg-warning{% endif %}"
+                                                     style="width: {{ pred.probabilidade }}%"></div>
+                                            </div>
+                                            <small class="fw-bold">{{ pred.probabilidade }}%</small>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-risco-{{ pred.nivel_risco }}">
+                                            {{ pred.nivel_risco_display }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="5" class="text-center py-4 text-muted">
+                                        Nenhum dado de predição disponível. Execute <code>python manage.py generate_fake_data</code> e <code>python manage.py train_model</code> para gerar as análises.
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const COLORS = {
+        primary: '#0d6efd',
+        success: '#198754',
+        danger: '#dc3545',
+        warning: '#ffc107',
+        info: '#0dcaf0',
+        purple: '#6f42c1',
+        orange: '#fd7e14',
+        teal: '#20c997',
+        pink: '#d63384',
+        cyan: '#0dcaf0',
+    };
+    const PALETTE = [COLORS.primary, COLORS.danger, COLORS.warning, COLORS.success, COLORS.purple, COLORS.orange, COLORS.teal, COLORS.pink, COLORS.info, COLORS.cyan];
+
+    // Cancelamento por Faixa Etária
+    new Chart(document.getElementById('chartFaixaEtaria'), {
+        type: 'bar',
+        data: {
+            labels: {{ churn_faixa_labels|safe }},
+            datasets: [{
+                label: 'Taxa de Cancelamento (%)',
+                data: {{ churn_faixa_data|safe }},
+                backgroundColor: PALETTE.slice(0, 5),
+                borderRadius: 6,
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { beginAtZero: true, ticks: { callback: v => v + '%' } }
+            }
+        }
+    });
+
+    // Cancelamento por Gênero
+    new Chart(document.getElementById('chartGenero'), {
+        type: 'doughnut',
+        data: {
+            labels: {{ churn_genero_labels|safe }},
+            datasets: [{
+                data: {{ churn_genero_data|safe }},
+                backgroundColor: [COLORS.primary, COLORS.danger, COLORS.warning],
+                borderWidth: 0,
+            }]
+        },
+        options: {
+            responsive: true,
+            cutout: '60%',
+            plugins: {
+                legend: { position: 'bottom' }
+            }
+        }
+    });
+
+    // Cancelamento por Plano
+    new Chart(document.getElementById('chartPlano'), {
+        type: 'bar',
+        data: {
+            labels: {{ churn_plano_labels|safe }},
+            datasets: [{
+                label: 'Taxa de Cancelamento (%)',
+                data: {{ churn_plano_data|safe }},
+                backgroundColor: [COLORS.info, COLORS.purple],
+                borderRadius: 6,
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { beginAtZero: true, ticks: { callback: v => v + '%' } }
+            }
+        }
+    });
+
+    // Cancelamento por Estado
+    new Chart(document.getElementById('chartEstado'), {
+        type: 'bar',
+        data: {
+            labels: {{ churn_estado_labels|safe }},
+            datasets: [{
+                label: 'Taxa de Cancelamento (%)',
+                data: {{ churn_estado_data|safe }},
+                backgroundColor: COLORS.danger,
+                borderRadius: 6,
+            }]
+        },
+        options: {
+            responsive: true,
+            indexAxis: 'y',
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { beginAtZero: true, ticks: { callback: v => v + '%' } }
+            }
+        }
+    });
+
+    // Scatter: Inatividade x Churn
+    new Chart(document.getElementById('chartScatter'), {
+        type: 'scatter',
+        data: {
+            datasets: [{
+                label: 'Clientes',
+                data: {{ scatter_data|safe }},
+                backgroundColor: 'rgba(220, 53, 69, 0.4)',
+                borderColor: COLORS.danger,
+                pointRadius: 4,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { title: { display: true, text: 'Dias sem Acesso' }, beginAtZero: true },
+                y: { title: { display: true, text: 'Probabilidade de Cancelamento (%)' }, beginAtZero: true }
+            }
+        }
+    });
+</script>
+{% endblock %}
