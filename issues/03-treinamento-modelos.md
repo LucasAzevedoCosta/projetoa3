@@ -33,3 +33,6 @@ Salvar tudo em:
 - Medir tempo com `time.time()` para comparação rede neural vs clássico
 - Usar `joblib.dump()` para salvar os modelos
 - Salvar métricas em JSON estruturado
+
+---
+✅ Concluído

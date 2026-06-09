@@ -19,3 +19,6 @@ Implementar os endpoints informativos e de comparação:
 - Para /compare: extrair métricas dos dois modelos e comparar programaticamente
 - Adicionar endpoint `GET /` como health check com info básica da API
 - Adicionar `GET /datasets` que lista os datasets disponíveis e suas características
+
+---
+✅ Concluído

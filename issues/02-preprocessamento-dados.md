@@ -18,3 +18,6 @@ Criar um módulo de pré-processamento que carrega e limpa os 3 datasets de chur
 - Usar `LabelEncoder` para binárias (gender, Partner, etc.) e `pd.get_dummies` para multi-categorias (InternetService, Contract, PaymentMethod)
 - Usar `StandardScaler` do sklearn para normalização
 - Salvar a lista de feature names junto com o scaler para garantir consistência na inferência
+
+---
+✅ Concluído

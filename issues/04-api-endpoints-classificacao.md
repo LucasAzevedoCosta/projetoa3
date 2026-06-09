@@ -29,3 +29,6 @@ Criar o `main.py` com a aplicação FastAPI e implementar os 3 endpoints de clas
 - O schema de input deve aceitar as features do Telco: tenure, MonthlyCharges, TotalCharges, Contract, InternetService, OnlineSecurity, TechSupport, etc.
 - Para /explain: usar `tree_.feature`, `tree_.threshold` e `decision_path()` do DecisionTree para extrair as regras do caminho
 - Adicionar tratamento de erro para inputs inválidos
+
+---
+✅ Concluído

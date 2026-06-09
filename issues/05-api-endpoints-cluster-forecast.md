@@ -19,3 +19,6 @@ Implementar os endpoints de segmentação e previsão temporal:
 - Para /forecast: usar o LinearRegression treinado sobre dados agregados. Extrapolar para os meses futuros solicitados. Retornar valores arredondados
 - Criar schemas Pydantic para cada endpoint
 - Validar que `meses_futuros` é positivo e <= 24
+
+---
+✅ Concluído
