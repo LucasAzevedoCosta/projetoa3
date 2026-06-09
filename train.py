@@ -10,7 +10,7 @@ from sklearn.linear_model import LinearRegression
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 import joblib
 
-from preprocess import prepare_telco, load_telco, encode_telco, MODELS_DIR
+from preprocess import prepare_combined, MODELS_DIR
 
 RANDOM_STATE = 42
 
@@ -50,9 +50,9 @@ def train_kmeans(X_train_scaled, feature_names):
     for i in range(4):
         tenure_z, charge_z, total_z = centers[i]
         if tenure_z > 0 and charge_z > 0:
-            profiles[i] = "Cliente VIP - Alto valor, longa permanência"
+            profiles[i] = "Cliente VIP - Alto valor, longa permanencia"
         elif tenure_z > 0 and charge_z <= 0:
-            profiles[i] = "Cliente Fiel - Longa permanência, plano econômico"
+            profiles[i] = "Cliente Fiel - Longa permanencia, plano economico"
         elif tenure_z <= 0 and charge_z > 0:
             profiles[i] = "Cliente Novo Premium - Recente, alto gasto"
         else:
@@ -81,15 +81,21 @@ def train_forecast(X_train_scaled, y_train, feature_names):
 
 
 def main():
-    print("=" * 50)
+    print("=" * 60)
     print("TREINAMENTO DOS MODELOS - PredictAPI")
-    print("=" * 50)
+    print("=" * 60)
 
-    print("\n1. Pré-processamento dos dados...")
-    X_train, X_test, y_train, y_test, feature_names = prepare_telco()
-    print(f"   Train: {X_train.shape}, Test: {X_test.shape}")
+    print("\n1. Pre-processamento (3 datasets reais + dados sinteticos)...")
+    X_train, X_test, y_train, y_test, feature_names = prepare_combined()
 
     all_metrics = {}
+    all_metrics["_dataset_info"] = {
+        "total_amostras": len(y_train) + len(y_test),
+        "treino": len(y_train),
+        "teste": len(y_test),
+        "features": len(feature_names),
+        "fontes": ["Telco (7043)", "Amazon (5000)", "Iranian (3150)", "Sintetico (2000)"],
+    }
 
     print("\n2. Treinando RandomForest...")
     rf = RandomForestClassifier(n_estimators=100, random_state=RANDOM_STATE)
@@ -97,7 +103,7 @@ def main():
     rf_metrics["features"] = feature_names
     all_metrics["random_forest"] = rf_metrics
     joblib.dump(rf, os.path.join(MODELS_DIR, "random_forest.pkl"))
-    print(f"   Acurácia: {rf_metrics['acuracia']:.4f} | F1: {rf_metrics['f1_score']:.4f}")
+    print(f"   Acuracia: {rf_metrics['acuracia']:.4f} | F1: {rf_metrics['f1_score']:.4f}")
 
     print("\n3. Treinando DecisionTree...")
     dt = DecisionTreeClassifier(max_depth=6, random_state=RANDOM_STATE)
@@ -105,7 +111,7 @@ def main():
     dt_metrics["features"] = feature_names
     all_metrics["decision_tree"] = dt_metrics
     joblib.dump(dt, os.path.join(MODELS_DIR, "decision_tree.pkl"))
-    print(f"   Acurácia: {dt_metrics['acuracia']:.4f} | F1: {dt_metrics['f1_score']:.4f}")
+    print(f"   Acuracia: {dt_metrics['acuracia']:.4f} | F1: {dt_metrics['f1_score']:.4f}")
 
     print("\n4. Treinando MLPClassifier (Rede Neural)...")
     mlp = MLPClassifier(hidden_layer_sizes=(64, 32), max_iter=500, random_state=RANDOM_STATE)
@@ -113,7 +119,7 @@ def main():
     mlp_metrics["features"] = feature_names
     all_metrics["mlp_neural"] = mlp_metrics
     joblib.dump(mlp, os.path.join(MODELS_DIR, "mlp_neural.pkl"))
-    print(f"   Acurácia: {mlp_metrics['acuracia']:.4f} | F1: {mlp_metrics['f1_score']:.4f}")
+    print(f"   Acuracia: {mlp_metrics['acuracia']:.4f} | F1: {mlp_metrics['f1_score']:.4f}")
 
     print("\n5. Treinando K-Means (4 clusters)...")
     kmeans, profiles, cluster_features = train_kmeans(X_train, feature_names)
@@ -146,14 +152,14 @@ def main():
     with open(metrics_path, "w") as f:
         json.dump(all_metrics, f, indent=2, ensure_ascii=False)
 
-    print("\n" + "=" * 50)
-    print("TREINAMENTO CONCLUÍDO")
+    print("\n" + "=" * 60)
+    print("TREINAMENTO CONCLUIDO")
     print(f"Modelos salvos em: {MODELS_DIR}/")
-    print(f"Métricas salvas em: {metrics_path}")
-    print("=" * 50)
+    print(f"Metricas salvas em: {metrics_path}")
+    print("=" * 60)
 
-    print("\n--- COMPARAÇÃO: RandomForest vs Rede Neural ---")
-    print(f"{'Métrica':<25} {'RandomForest':>15} {'MLP Neural':>15}")
+    print("\n--- COMPARACAO: RandomForest vs Rede Neural ---")
+    print(f"{'Metrica':<25} {'RandomForest':>15} {'MLP Neural':>15}")
     print("-" * 55)
     for m in ["acuracia", "precision", "recall", "f1_score", "tempo_treino_seg", "tempo_inferencia_seg"]:
         print(f"{m:<25} {rf_metrics[m]:>15} {mlp_metrics[m]:>15}")

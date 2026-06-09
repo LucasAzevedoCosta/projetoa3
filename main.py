@@ -394,28 +394,38 @@ class CompareOutput(BaseModel):
 
 
 def encode_input(cliente: ClienteInput) -> np.ndarray:
-    data = cliente.model_dump()
-    df = pd.DataFrame([data])
+    d = cliente.model_dump()
+    binary_yes = {"Yes": 1, "No": 0}
 
-    binary_map = {"Yes": 1, "No": 0, "Male": 1, "Female": 0}
-    for col in ["gender", "Partner", "Dependents", "PhoneService", "PaperlessBilling"]:
-        df[col] = df[col].map(binary_map)
+    row = {
+        "tenure": d["tenure"],
+        "MonthlyCharges": d["MonthlyCharges"],
+        "TotalCharges": d["TotalCharges"],
+        "SeniorCitizen": d["SeniorCitizen"],
+        "Partner": binary_yes.get(d["Partner"], 0),
+        "Dependents": binary_yes.get(d["Dependents"], 0),
+        "PhoneService": binary_yes.get(d["PhoneService"], 0),
+        "PaperlessBilling": binary_yes.get(d["PaperlessBilling"], 0),
+        "ContractMonthly": int(d["Contract"] == "Month-to-month"),
+        "ContractOneYear": int(d["Contract"] == "One year"),
+        "ContractTwoYear": int(d["Contract"] == "Two year"),
+        "InternetFiber": int(d["InternetService"] == "Fiber optic"),
+        "InternetDSL": int(d["InternetService"] == "DSL"),
+        "InternetNo": int(d["InternetService"] == "No"),
+        "OnlineSecurity": int(d["OnlineSecurity"] == "Yes"),
+        "TechSupport": int(d["TechSupport"] == "Yes"),
+        "StreamingTV": int(d["StreamingTV"] == "Yes"),
+        "SupportCalls": 0,
+        "InternationalPlan": 0,
+    }
 
-    multi_cols = [
-        "MultipleLines", "InternetService", "OnlineSecurity", "OnlineBackup",
-        "DeviceProtection", "TechSupport", "StreamingTV", "StreamingMovies",
-        "Contract", "PaymentMethod",
-    ]
-    df = pd.get_dummies(df, columns=multi_cols, drop_first=True)
-    bool_cols = df.select_dtypes(include=["bool"]).columns
-    df[bool_cols] = df[bool_cols].astype(int)
+    df_aligned = pd.DataFrame([row])
+    for col in feature_names:
+        if col not in df_aligned.columns:
+            df_aligned[col] = 0
+    df_aligned = df_aligned[feature_names]
 
-    df_aligned = pd.DataFrame(0, index=[0], columns=feature_names)
-    for col in df.columns:
-        if col in df_aligned.columns:
-            df_aligned[col] = df[col].values
-
-    scaled = scaler.transform(df_aligned.values)
+    scaled = scaler.transform(df_aligned)
     return scaled
 
 
