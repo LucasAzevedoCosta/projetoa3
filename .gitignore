@@ -2,8 +2,6 @@
 .claude/
 .devcontainer/
 .vscode/
-CLAUDE.MD
-HANDOFF.md
 
 # Python
 __pycache__/
@@ -11,10 +9,6 @@ __pycache__/
 *.egg-info/
 dist/
 build/
-
-# Django
-db.sqlite3
-media/models/*.joblib
 
 # ML Models
 models/*.pkl
