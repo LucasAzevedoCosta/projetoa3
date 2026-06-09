@@ -16,6 +16,11 @@ build/
 db.sqlite3
 media/models/*.joblib
 
+# ML Models
+models/*.pkl
+models/*.json
+!models/.gitkeep
+
 # Env
 .env
 *.env

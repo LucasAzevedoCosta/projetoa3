@@ -1,0 +1,5 @@
+https://sagemaker-sample-files.s3.amazonaws.com/datasets/tabular/synthetic/churn.csv
+
+https://archive.ics.uci.edu/dataset/563/iranian+churn+dataset
+
+https://www.kaggle.com/datasets/blastchar/telco-customer-churn
