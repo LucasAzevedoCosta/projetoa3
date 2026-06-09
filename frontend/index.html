@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PredictAPI - Previsao de Churn</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; }
+
+        .header { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border-bottom: 1px solid #334155; padding: 1.5rem 2rem; }
+        .header h1 { font-size: 1.5rem; font-weight: 700; color: #f8fafc; }
+        .header h1 span { color: #38bdf8; }
+        .header p { color: #94a3b8; font-size: 0.875rem; margin-top: 0.25rem; }
+
+        .container { max-width: 1200px; margin: 0 auto; padding: 2rem; }
+
+        .tabs { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+        .tab { padding: 0.625rem 1.25rem; border: 1px solid #334155; border-radius: 0.5rem; background: #1e293b; color: #94a3b8; cursor: pointer; font-size: 0.875rem; transition: all 0.2s; }
+        .tab:hover { border-color: #38bdf8; color: #e2e8f0; }
+        .tab.active { background: #38bdf8; color: #0f172a; border-color: #38bdf8; font-weight: 600; }
+
+        .panel { display: none; }
+        .panel.active { display: block; }
+
+        .card { background: #1e293b; border: 1px solid #334155; border-radius: 0.75rem; padding: 1.5rem; margin-bottom: 1.5rem; }
+        .card h2 { font-size: 1.125rem; color: #f8fafc; margin-bottom: 1rem; }
+        .card h3 { font-size: 0.95rem; color: #cbd5e1; margin-bottom: 0.75rem; }
+
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem; }
+        .form-group { display: flex; flex-direction: column; gap: 0.375rem; }
+        .form-group label { font-size: 0.8rem; color: #94a3b8; font-weight: 500; }
+        .form-group select, .form-group input {
+            padding: 0.5rem 0.75rem; border: 1px solid #334155; border-radius: 0.375rem;
+            background: #0f172a; color: #e2e8f0; font-size: 0.875rem;
+        }
+        .form-group select:focus, .form-group input:focus { outline: none; border-color: #38bdf8; }
+
+        .btn { padding: 0.625rem 1.5rem; border: none; border-radius: 0.5rem; font-size: 0.875rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+        .btn-primary { background: #38bdf8; color: #0f172a; }
+        .btn-primary:hover { background: #7dd3fc; }
+        .btn-group { display: flex; gap: 0.75rem; margin-top: 1.25rem; flex-wrap: wrap; }
+
+        .result { margin-top: 1.5rem; padding: 1.25rem; border-radius: 0.5rem; border: 1px solid #334155; background: #0f172a; }
+        .result.churn { border-color: #f87171; background: rgba(248,113,113,0.08); }
+        .result.no-churn { border-color: #4ade80; background: rgba(74,222,128,0.08); }
+
+        .result-label { font-size: 0.8rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; }
+        .result-value { font-size: 1.5rem; font-weight: 700; margin-top: 0.25rem; }
+        .result-value.churn { color: #f87171; }
+        .result-value.no-churn { color: #4ade80; }
+        .result-detail { font-size: 0.875rem; color: #cbd5e1; margin-top: 0.5rem; line-height: 1.6; }
+
+        .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+        .compare-card { padding: 1.25rem; border-radius: 0.5rem; border: 1px solid #334155; background: #0f172a; }
+        .compare-card h3 { color: #38bdf8; margin-bottom: 0.75rem; font-size: 1rem; }
+        .metric-row { display: flex; justify-content: space-between; padding: 0.375rem 0; border-bottom: 1px solid #1e293b; font-size: 0.875rem; }
+        .metric-row .label { color: #94a3b8; }
+        .metric-row .value { color: #f8fafc; font-weight: 600; }
+        .winner { color: #4ade80 !important; }
+
+        .explain-step { padding: 0.5rem 0.75rem; margin: 0.375rem 0; border-left: 3px solid #38bdf8; background: rgba(56,189,248,0.05); font-size: 0.875rem; color: #cbd5e1; border-radius: 0 0.25rem 0.25rem 0; }
+        .explain-step:last-child { border-left-color: #4ade80; }
+
+        .forecast-bar { display: flex; align-items: center; gap: 0.75rem; margin: 0.5rem 0; }
+        .forecast-label { width: 60px; font-size: 0.8rem; color: #94a3b8; text-align: right; }
+        .forecast-track { flex: 1; height: 24px; background: #0f172a; border-radius: 0.25rem; overflow: hidden; }
+        .forecast-fill { height: 100%; background: linear-gradient(90deg, #38bdf8, #818cf8); border-radius: 0.25rem; transition: width 0.5s; display: flex; align-items: center; justify-content: flex-end; padding-right: 0.5rem; font-size: 0.75rem; font-weight: 600; min-width: fit-content; }
+
+        .cluster-badge { display: inline-block; padding: 0.375rem 1rem; border-radius: 2rem; font-weight: 600; font-size: 0.95rem; margin-top: 0.5rem; }
+        .cluster-0 { background: rgba(74,222,128,0.15); color: #4ade80; border: 1px solid #4ade80; }
+        .cluster-1 { background: rgba(248,113,113,0.15); color: #f87171; border: 1px solid #f87171; }
+        .cluster-2 { background: rgba(56,189,248,0.15); color: #38bdf8; border: 1px solid #38bdf8; }
+        .cluster-3 { background: rgba(251,191,36,0.15); color: #fbbf24; border: 1px solid #fbbf24; }
+
+        .loading { color: #94a3b8; font-style: italic; }
+
+        @media (max-width: 768px) {
+            .compare-grid { grid-template-columns: 1fr; }
+            .form-grid { grid-template-columns: 1fr 1fr; }
+        }
+        @media (max-width: 480px) {
+            .form-grid { grid-template-columns: 1fr; }
+            .container { padding: 1rem; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1>Predict<span>API</span></h1>
+    <p>API Inteligente de Decisao com Machine Learning</p>
+</div>
+
+<div class="container">
+    <div class="tabs">
+        <div class="tab active" data-tab="predict">Previsao de Churn</div>
+        <div class="tab" data-tab="compare">ML vs Regra Fixa</div>
+        <div class="tab" data-tab="cluster">Segmentacao</div>
+        <div class="tab" data-tab="explain">Explicacao</div>
+        <div class="tab" data-tab="forecast">Forecast</div>
+        <div class="tab" data-tab="models">Modelos</div>
+    </div>
+
+    <!-- PREDICT -->
+    <div class="panel active" id="panel-predict">
+        <div class="card">
+            <h2>Previsao de Churn do Cliente</h2>
+            <div class="form-grid" id="form-predict">
+                <div class="form-group">
+                    <label>Genero</label>
+                    <select name="gender"><option value="Male">Masculino</option><option value="Female">Feminino</option></select>
+                </div>
+                <div class="form-group">
+                    <label>Idoso (65+)</label>
+                    <select name="SeniorCitizen"><option value="0">Nao</option><option value="1">Sim</option></select>
+                </div>
+                <div class="form-group">
+                    <label>Parceiro(a)</label>
+                    <select name="Partner"><option value="Yes">Sim</option><option value="No">Nao</option></select>
+                </div>
+                <div class="form-group">
+                    <label>Dependentes</label>
+                    <select name="Dependents"><option value="No">Nao</option><option value="Yes">Sim</option></select>
+                </div>
+                <div class="form-group">
+                    <label>Meses de permanencia</label>
+                    <input type="number" name="tenure" value="12" min="0" max="72">
+                </div>
+                <div class="form-group">
+                    <label>Servico Telefonico</label>
+                    <select name="PhoneService"><option value="Yes">Sim</option><option value="No">Nao</option></select>
+                </div>
+                <div class="form-group">
+                    <label>Multiplas Linhas</label>
+                    <select name="MultipleLines"><option value="No">Nao</option><option value="Yes">Sim</option><option value="No phone service">Sem telefone</option></select>
+                </div>
+                <div class="form-group">
+                    <label>Servico de Internet</label>
+                    <select name="InternetService"><option value="Fiber optic">Fibra optica</option><option value="DSL">DSL</option><option value="No">Nao</option></select>
+                </div>
+                <div class="form-group">
+                    <label>Seguranca Online</label>
+                    <select name="OnlineSecurity"><option value="No">Nao</option><option value="Yes">Sim</option><option value="No internet service">Sem internet</option></select>
+                </div>
+                <div class="form-group">
+                    <label>Backup Online</label>
+                    <select name="OnlineBackup"><option value="No">Nao</option><option value="Yes">Sim</option><option value="No internet service">Sem internet</option></select>
+                </div>
+                <div class="form-group">
+                    <label>Protecao de Dispositivo</label>
+                    <select name="DeviceProtection"><option value="No">Nao</option><option value="Yes">Sim</option><option value="No internet service">Sem internet</option></select>
+                </div>
+                <div class="form-group">
+                    <label>Suporte Tecnico</label>
+                    <select name="TechSupport"><option value="No">Nao</option><option value="Yes">Sim</option><option value="No internet service">Sem internet</option></select>
+                </div>
+                <div class="form-group">
+                    <label>Streaming TV</label>
+                    <select name="StreamingTV"><option value="No">Nao</option><option value="Yes">Sim</option><option value="No internet service">Sem internet</option></select>
+                </div>
+                <div class="form-group">
+                    <label>Streaming Filmes</label>
+                    <select name="StreamingMovies"><option value="No">Nao</option><option value="Yes">Sim</option><option value="No internet service">Sem internet</option></select>
+                </div>
+                <div class="form-group">
+                    <label>Contrato</label>
+                    <select name="Contract"><option value="Month-to-month">Mensal</option><option value="One year">1 Ano</option><option value="Two year">2 Anos</option></select>
+                </div>
+                <div class="form-group">
+                    <label>Fatura Digital</label>
+                    <select name="PaperlessBilling"><option value="Yes">Sim</option><option value="No">Nao</option></select>
+                </div>
+                <div class="form-group">
+                    <label>Forma de Pagamento</label>
+                    <select name="PaymentMethod">
+                        <option value="Electronic check">Cheque eletronico</option>
+                        <option value="Mailed check">Cheque correio</option>
+                        <option value="Bank transfer (automatic)">Transferencia bancaria</option>
+                        <option value="Credit card (automatic)">Cartao de credito</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Cobranca Mensal (R$)</label>
+                    <input type="number" name="MonthlyCharges" value="70.35" step="0.01" min="0">
+                </div>
+                <div class="form-group">
+                    <label>Cobranca Total (R$)</label>
+                    <input type="number" name="TotalCharges" value="844.20" step="0.01" min="0">
+                </div>
+            </div>
+            <div class="btn-group">
+                <button class="btn btn-primary" onclick="predictML()">Prever com ML</button>
+            </div>
+            <div id="result-predict"></div>
+        </div>
+    </div>
+
+    <!-- COMPARE -->
+    <div class="panel" id="panel-compare">
+        <div class="card">
+            <h2>ML vs Regra Fixa</h2>
+            <p style="color:#94a3b8;font-size:0.875rem;margin-bottom:1rem;">Preencha os dados na aba "Previsao de Churn" e clique abaixo para comparar.</p>
+            <div class="btn-group">
+                <button class="btn btn-primary" onclick="comparePredictions()">Comparar</button>
+            </div>
+            <div id="result-compare-predictions"></div>
+        </div>
+        <div class="card">
+            <h2>RandomForest vs Rede Neural (MLP)</h2>
+            <button class="btn btn-primary" onclick="compareModels()">Ver Comparacao</button>
+            <div id="result-compare"></div>
+        </div>
+    </div>
+
+    <!-- CLUSTER -->
+    <div class="panel" id="panel-cluster">
+        <div class="card">
+            <h2>Segmentacao de Cliente</h2>
+            <p style="color:#94a3b8;font-size:0.875rem;margin-bottom:1rem;">Usa os dados preenchidos na aba "Previsao de Churn".</p>
+            <button class="btn btn-primary" onclick="getCluster()">Identificar Segmento</button>
+            <div id="result-cluster"></div>
+        </div>
+    </div>
+
+    <!-- EXPLAIN -->
+    <div class="panel" id="panel-explain">
+        <div class="card">
+            <h2>Explicacao da Decisao</h2>
+            <p style="color:#94a3b8;font-size:0.875rem;margin-bottom:1rem;">Mostra o caminho da arvore de decisao para o cliente preenchido.</p>
+            <button class="btn btn-primary" onclick="getExplanation()">Explicar Decisao</button>
+            <div id="result-explain"></div>
+        </div>
+    </div>
+
+    <!-- FORECAST -->
+    <div class="panel" id="panel-forecast">
+        <div class="card">
+            <h2>Forecast de Churn</h2>
+            <div class="form-grid" style="max-width:300px;">
+                <div class="form-group">
+                    <label>Meses futuros</label>
+                    <input type="number" id="forecast-months" value="6" min="1" max="24">
+                </div>
+            </div>
+            <div class="btn-group">
+                <button class="btn btn-primary" onclick="getForecast()">Gerar Previsao</button>
+            </div>
+            <div id="result-forecast"></div>
+        </div>
+    </div>
+
+    <!-- MODELS -->
+    <div class="panel" id="panel-models">
+        <div class="card">
+            <h2>Informacoes dos Modelos</h2>
+            <button class="btn btn-primary" onclick="getModelInfo()">Carregar Info</button>
+            <div id="result-models"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+const API = 'http://localhost:8000';
+
+function getFormData() {
+    const form = document.getElementById('form-predict');
+    const data = {};
+    form.querySelectorAll('select, input').forEach(el => {
+        const val = el.value;
+        if (el.type === 'number') {
+            data[el.name] = parseFloat(val);
+        } else if (el.name === 'SeniorCitizen') {
+            data[el.name] = parseInt(val);
+        } else {
+            data[el.name] = val;
+        }
+    });
+    return data;
+}
+
+async function apiCall(endpoint, method = 'GET', body = null) {
+    const opts = { method, headers: { 'Content-Type': 'application/json' } };
+    if (body) opts.body = JSON.stringify(body);
+    const res = await fetch(API + endpoint, opts);
+    if (!res.ok) throw new Error(`Erro ${res.status}`);
+    return res.json();
+}
+
+async function predictML() {
+    const el = document.getElementById('result-predict');
+    el.innerHTML = '<p class="loading">Processando...</p>';
+    try {
+        const data = getFormData();
+        const result = await apiCall('/predict', 'POST', data);
+        const cls = result.churn ? 'churn' : 'no-churn';
+        const label = result.churn ? 'VAI CANCELAR' : 'NAO VAI CANCELAR';
+        const pct = (result.probabilidade * 100).toFixed(1);
+        el.innerHTML = `
+            <div class="result ${cls}">
+                <div class="result-label">Previsao do Modelo ML (RandomForest)</div>
+                <div class="result-value ${cls}">${label}</div>
+                <div class="result-detail">Probabilidade de churn: <strong>${pct}%</strong></div>
+            </div>`;
+    } catch (e) {
+        el.innerHTML = `<div class="result"><div class="result-detail" style="color:#f87171;">Erro: ${e.message}. Verifique se a API esta rodando.</div></div>`;
+    }
+}
+
+async function comparePredictions() {
+    const el = document.getElementById('result-compare-predictions');
+    el.innerHTML = '<p class="loading">Comparando...</p>';
+    try {
+        const data = getFormData();
+        const [ml, rule] = await Promise.all([
+            apiCall('/predict', 'POST', data),
+            apiCall('/predict-rule', 'POST', data)
+        ]);
+        const mlCls = ml.churn ? 'churn' : 'no-churn';
+        const ruleCls = rule.churn ? 'churn' : 'no-churn';
+        el.innerHTML = `
+            <div class="compare-grid" style="margin-top:1.25rem;">
+                <div class="compare-card">
+                    <h3>Modelo ML (RandomForest)</h3>
+                    <div class="result-value ${mlCls}" style="font-size:1.25rem;">${ml.churn ? 'CHURN' : 'NAO CHURN'}</div>
+                    <div class="result-detail">Probabilidade: ${(ml.probabilidade * 100).toFixed(1)}%</div>
+                </div>
+                <div class="compare-card">
+                    <h3>Regra Fixa</h3>
+                    <div class="result-value ${ruleCls}" style="font-size:1.25rem;">${rule.churn ? 'CHURN' : 'NAO CHURN'}</div>
+                    <div class="result-detail">${rule.regra_aplicada}</div>
+                </div>
+            </div>
+            <div style="margin-top:1rem;font-size:0.875rem;color:#94a3b8;">
+                ${ml.churn === rule.churn ? 'Os dois metodos concordam.' : 'Os metodos DIVERGEM neste caso.'}
+            </div>`;
+    } catch (e) {
+        el.innerHTML = `<div class="result"><div class="result-detail" style="color:#f87171;">Erro: ${e.message}</div></div>`;
+    }
+}
+
+async function compareModels() {
+    const el = document.getElementById('result-compare');
+    el.innerHTML = '<p class="loading">Carregando...</p>';
+    try {
+        const r = await apiCall('/compare');
+        const metrics = ['acuracia', 'precision', 'recall', 'f1_score', 'tempo_treino_seg', 'tempo_inferencia_seg'];
+        const labels = ['Acuracia', 'Precision', 'Recall', 'F1 Score', 'Tempo Treino (s)', 'Tempo Inferencia (s)'];
+
+        let rfRows = '', mlpRows = '';
+        metrics.forEach((m, i) => {
+            const rfVal = r.random_forest[m];
+            const mlpVal = r.mlp_neural[m];
+            const isTime = m.includes('tempo');
+            const rfWin = isTime ? rfVal <= mlpVal : rfVal >= mlpVal;
+            rfRows += `<div class="metric-row"><span class="label">${labels[i]}</span><span class="value ${rfWin ? 'winner' : ''}">${rfVal}</span></div>`;
+            mlpRows += `<div class="metric-row"><span class="label">${labels[i]}</span><span class="value ${!rfWin ? 'winner' : ''}">${mlpVal}</span></div>`;
+        });
+
+        el.innerHTML = `
+            <div class="compare-grid" style="margin-top:1.25rem;">
+                <div class="compare-card">
+                    <h3>RandomForest</h3>
+                    ${rfRows}
+                </div>
+                <div class="compare-card">
+                    <h3>MLP Neural Network</h3>
+                    ${mlpRows}
+                </div>
+            </div>
+            <div style="margin-top:1rem;font-size:0.85rem;color:#94a3b8;">
+                Melhor acuracia: <strong style="color:#4ade80;">${r.melhor_acuracia}</strong> |
+                Melhor F1: <strong style="color:#4ade80;">${r.melhor_f1}</strong> |
+                Mais rapido (treino): <strong style="color:#4ade80;">${r.melhor_velocidade_treino}</strong>
+            </div>`;
+    } catch (e) {
+        el.innerHTML = `<div class="result"><div class="result-detail" style="color:#f87171;">Erro: ${e.message}</div></div>`;
+    }
+}
+
+async function getCluster() {
+    const el = document.getElementById('result-cluster');
+    el.innerHTML = '<p class="loading">Segmentando...</p>';
+    try {
+        const data = getFormData();
+        const r = await apiCall('/cluster', 'POST', data);
+        el.innerHTML = `
+            <div class="result" style="margin-top:1.25rem;">
+                <div class="result-label">Segmento Identificado</div>
+                <div class="cluster-badge cluster-${r.cluster}">Cluster ${r.cluster}</div>
+                <div class="result-detail" style="margin-top:0.75rem;font-size:1rem;">${r.perfil}</div>
+            </div>`;
+    } catch (e) {
+        el.innerHTML = `<div class="result"><div class="result-detail" style="color:#f87171;">Erro: ${e.message}</div></div>`;
+    }
+}
+
+async function getExplanation() {
+    const el = document.getElementById('result-explain');
+    el.innerHTML = '<p class="loading">Analisando...</p>';
+    try {
+        const data = getFormData();
+        const r = await apiCall('/explain', 'POST', data);
+        const cls = r.churn ? 'churn' : 'no-churn';
+        const steps = r.explicacao.map(s => `<div class="explain-step">${s}</div>`).join('');
+        el.innerHTML = `
+            <div class="result ${cls}" style="margin-top:1.25rem;">
+                <div class="result-label">Resultado: ${r.churn ? 'CHURN' : 'NAO CHURN'} (${(r.probabilidade * 100).toFixed(1)}%)</div>
+                <div style="margin-top:1rem;">
+                    <div class="result-label" style="margin-bottom:0.5rem;">Caminho da Arvore de Decisao</div>
+                    ${steps}
+                </div>
+            </div>`;
+    } catch (e) {
+        el.innerHTML = `<div class="result"><div class="result-detail" style="color:#f87171;">Erro: ${e.message}</div></div>`;
+    }
+}
+
+async function getForecast() {
+    const el = document.getElementById('result-forecast');
+    el.innerHTML = '<p class="loading">Gerando previsao...</p>';
+    try {
+        const months = parseInt(document.getElementById('forecast-months').value);
+        const r = await apiCall('/forecast', 'POST', { meses_futuros: months });
+        const maxPct = Math.max(...r.previsoes.map(p => p.churn_previsto_pct), 1);
+        const bars = r.previsoes.map(p => {
+            const w = Math.max((p.churn_previsto_pct / maxPct) * 100, 8);
+            return `
+                <div class="forecast-bar">
+                    <span class="forecast-label">Mes ${p.mes}</span>
+                    <div class="forecast-track">
+                        <div class="forecast-fill" style="width:${w}%">${p.churn_previsto_pct}%</div>
+                    </div>
+                </div>`;
+        }).join('');
+        el.innerHTML = `<div style="margin-top:1.25rem;">${bars}</div>`;
+    } catch (e) {
+        el.innerHTML = `<div class="result"><div class="result-detail" style="color:#f87171;">Erro: ${e.message}</div></div>`;
+    }
+}
+
+async function getModelInfo() {
+    const el = document.getElementById('result-models');
+    el.innerHTML = '<p class="loading">Carregando...</p>';
+    try {
+        const r = await apiCall('/model-info');
+        let html = '<div style="margin-top:1.25rem;">';
+        for (const [key, info] of Object.entries(r)) {
+            html += `<div class="compare-card" style="margin-bottom:1rem;">
+                <h3>${info.modelo || key} (${info.tipo})</h3>`;
+            if (info.acuracia !== undefined) {
+                html += `
+                    <div class="metric-row"><span class="label">Acuracia</span><span class="value">${info.acuracia}</span></div>
+                    <div class="metric-row"><span class="label">Precision</span><span class="value">${info.precision}</span></div>
+                    <div class="metric-row"><span class="label">Recall</span><span class="value">${info.recall}</span></div>
+                    <div class="metric-row"><span class="label">F1 Score</span><span class="value">${info.f1_score}</span></div>`;
+            }
+            if (info.n_clusters) {
+                html += `<div class="metric-row"><span class="label">Clusters</span><span class="value">${info.n_clusters}</span></div>`;
+            }
+            if (info.coef !== undefined) {
+                html += `<div class="metric-row"><span class="label">Coeficiente</span><span class="value">${info.coef}</span></div>
+                         <div class="metric-row"><span class="label">Intercepto</span><span class="value">${info.intercept}</span></div>`;
+            }
+            html += '</div>';
+        }
+        html += '</div>';
+        el.innerHTML = html;
+    } catch (e) {
+        el.innerHTML = `<div class="result"><div class="result-detail" style="color:#f87171;">Erro: ${e.message}</div></div>`;
+    }
+}
+
+document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById('panel-' + tab.dataset.tab).classList.add('active');
+    });
+});
+</script>
+
+</body>
+</html>

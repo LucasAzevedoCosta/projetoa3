@@ -5,6 +5,8 @@ import pandas as pd
 import joblib
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -54,6 +56,13 @@ def load_models():
 
 
 load_models()
+
+FRONTEND_DIR = os.path.join(BASE_DIR, "frontend")
+
+
+@app.get("/app", include_in_schema=False)
+def serve_frontend():
+    return FileResponse(os.path.join(FRONTEND_DIR, "index.html"))
 
 
 class ClienteInput(BaseModel):

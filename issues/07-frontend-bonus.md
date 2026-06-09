@@ -16,3 +16,6 @@ Funcionalidades:
 - Servir o frontend via FastAPI usando `StaticFiles` ou abrir direto no navegador
 - Habilitar CORS na API com `CORSMiddleware` para permitir chamadas do frontend
 - Manter o design simples e funcional — foco em mostrar que funciona
+
+---
+✅ Concluído
